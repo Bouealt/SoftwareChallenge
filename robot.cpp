@@ -1,11 +1,19 @@
 #include "Astar.h"
 #include "robot.h"
 
-
-void Init()                   // 初始化场景
+void Init() // 初始化场景
 {
-    for (int i = 1; i <= n; i++) // 地图
-        scanf("%s", ch[i] + 1);
+    for (int i = 0; i < n; i++) // 地图
+        scanf("%s", ch[i] );
+    // 读取数据，跳过索引0，从索引1开始，符合原始代码的处理方式
+    // for (int i = 1; i <= n; i++)
+    // {
+    //     // 因为vector不能直接使用scanf读取整行
+    //     for (int j = 1; j <= n; j++)
+    //     {
+    //         cin >> ch[i][j];
+    //     }
+    // }
     for (int i = 0; i < berth_num; i++) // 港口
     {
         int id;
@@ -23,12 +31,14 @@ int Input()
 {
     scanf("%d%d", &id, &money); // 帧序号, 金钱
     int num;
+    Goods goods;
     scanf("%d", &num);
     for (int i = 0; i < num; i++) // 货物
     {
         int x, y, val;
         scanf("%d%d%d", &x, &y, &val);
-        goods[i] = Goods(x, y, val, num);
+        goods = Goods(x, y, val);
+        goodslist.push_back(goods);
     }
     for (int i = 0; i < robot_num; i++) // 机器人
     {
@@ -42,41 +52,97 @@ int Input()
     return id;
 }
 
-
-int findClosestGoodsIndex(const Robot &robot, const Goods *goods, int num)
+int findClosestGoods(Robot &robot)
 {
     int minDis = 0x3f3f3f3f;
     int index = -1;
-    for (int i = 0; i < num; i++)
+
+    for (int i = 0; i < goodslist.size(); i++)
     {
-        int dis = abs(robot.x - goods[i].x) + abs(robot.y - goods[i].y);
+        int dis = abs(robot.x - goodslist[i].x) + abs(robot.y - goodslist[i].y);
         if (dis < minDis)
         {
             minDis = dis;
             index = i;
         }
     }
-    return index;
-}
-
-void getGoods(int i)
-{
-    if (robot[i].goods == 0)
+    if (index != -1) // 找到离当前机器人最近的货物
     {
+        robot.flag = true;              // 标记机器人已分配货物
+        robot.mbx = goodslist[index].x; // 机器人目标坐标为物品坐标
+        robot.mby = goodslist[index].y;
+        goodslist.erase(goodslist.begin() + index); // 删除已分配的货物
+    }
+    else
+    {
+        return index; // 未找到货物
+    }
+}
+int findClosestBerth(Robot &robot)
+{
+    int minDis = 0x3f3f3f3f;
+    int index = -1;
 
-        // 实现 findClosestGoodsIndex 和 getDirection 函数
-        int closestGoodsIndex = findClosestGoodsIndex(robot[i], goods, goods->num);
-        if(closestGoodsIndex == -1) return; // 没有货物了
-        Node goal(goods[closestGoodsIndex].x, goods[closestGoodsIndex].y);
-
-        vector<Node> path = findPathForRobot(robot[i], goal, ch);
-        if (!path.empty())
+    for (int i = 0; i < berth_num; i++)
+    {
+        int dis = abs(robot.x - berth[i].x) + abs(robot.y - berth[i].y);
+        if (dis < minDis)
         {
-            Node nextStep = path[1];
-            printf("move %d %d\n", i, getDirection(robot[i], nextStep));
-            printf("move %d %d\n", 0, 0);
+            minDis = dis;
+            index = i;
         }
+    }
+    if (index != -1) // 找到离当前机器人最近的泊位
+    {
+        robot.mbx = berth[index].x; // 机器人目标坐标为泊位坐标
+        robot.mby = berth[index].y;
+    }
+    else
+    {
+        return index; // 未找到泊位
     }
 }
 
- 
+void getDis(int i)
+{
+    if (robot[i].goods == 0 && !goodslist.empty()) // 机器人没有携带货物，且货物数量不为0，分配货物
+    {
+        // LOGI("this is the robot:%d", i);
+        if (!robot[i].flag) // 机器人没有分配货物
+        {
+            // 实现 findClosestGoodsIndex 和 getDirection 函数
+            int ret = findClosestGoods(robot[i]);
+            if (ret == -1)
+            {
+                LOGE(" ------------************ 未找到货物 ************------------");
+                return;
+            }
+        }
+    }
+    if (robot[i].goods) // 机器人携带货物，去卸货
+    {
+        int ret = findClosestBerth(robot[i]);
+        if (ret == -1)
+        {
+            LOGE(" ------------************ 未找到泊位 ************------------");
+            return;
+        }
+    }
+    else
+        return;
+}
+void movetoDis(int i) // 往目标方向移动
+{
+    Node goal(robot[i].mbx, robot[i].mby);
+    // LOGI(" MOVE ");
+    if (robot[i].isPathEmpty())
+    {
+        robot[i].path = findPathForRobot(robot[i], goal, ch);
+    }
+    else if (!robot[i].isPathEmpty())
+    {
+        Node nextStep = robot[i].getNextPathNode();
+        // LOGI("nextStep|currentStep:%d,%d,%d,%d", path[1].x, path[1].y, robot[i].x, robot[i].y);
+        printf("move %d %d\n", i, getDirection(robot[i], nextStep));
+    }
+}
