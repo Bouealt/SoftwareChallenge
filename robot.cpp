@@ -1,10 +1,12 @@
 #include "Astar.h"
 #include "robot.h"
+#include "Logger.h"
 
 void Init() // 初始化场景
 {
     for (int i = 0; i < n; i++) // 地图
-        scanf("%s", ch[i] );
+        scanf("%s", ch[i]);
+
     // 读取数据，跳过索引0，从索引1开始，符合原始代码的处理方式
     // for (int i = 1; i <= n; i++)
     // {
@@ -117,32 +119,54 @@ void getDis(int i)
                 LOGE(" ------------************ 未找到货物 ************------------");
                 return;
             }
+            // LOGI("the robot %d  dis position is %d %d\n",i,robot[i].mbx, robot[i].mby);
         }
     }
-    if (robot[i].goods) // 机器人携带货物，去卸货
-    {
-        int ret = findClosestBerth(robot[i]);
-        if (ret == -1)
-        {
-            LOGE(" ------------************ 未找到泊位 ************------------");
-            return;
-        }
-    }
+    // if (robot[i].goods) // 机器人携带货物，去卸货
+    // {
+    //     int ret = findClosestBerth(robot[i]);
+    //     if (ret == -1)
+    //     {
+    //         LOGE(" ------------************ 未找到泊位 ************------------");
+    //         return;
+    //     }
+    //     // LOGI("the robot %d  dis position is %d %d\n",i,robot[i].mbx, robot[i].mby);
+    // }
     else
         return;
 }
+
 void movetoDis(int i) // 往目标方向移动
 {
+    // LOGI("the robot position %d   %d ", robot[i].x, robot[i].y);
+    // LOGI("the robot dis position is %d %d", robot[i].mbx, robot[i].mby);
     Node goal(robot[i].mbx, robot[i].mby);
+
     // LOGI(" MOVE ");
-    if (robot[i].isPathEmpty())
+    // LOGI("the robot position is %d %d\n", robot[i].x, robot[i].y);
+
+    // LOGI("the goal position is %d %d\n", goal->x, goal->y);
+    if ((goal.x == 0 && goal.y == 0) || (robot[i].x == goal.x && robot[i].y == goal.y)) // 机器人到达目标位置
     {
-        robot[i].path = findPathForRobot(robot[i], goal, ch);
+        return;
     }
-    else if (!robot[i].isPathEmpty())
+    // LOGI("current robot is %d", i);
+    // LOGI("robot path is %d", robot[i].path.empty());
+    else if (robot[i].path.empty() && robot[i].status == 0) // 机器人没有路径或者发生碰撞，重新寻路
     {
-        Node nextStep = robot[i].getNextPathNode();
-        // LOGI("nextStep|currentStep:%d,%d,%d,%d", path[1].x, path[1].y, robot[i].x, robot[i].y);
+        robot[i].path.clear(); // 清空路径
+        robot[i].path = findPathForRobot(robot[i], goal, ch);
+     
+        if (robot[i].path.empty())
+        {
+            return;
+        }
+        robot[i].path.erase(robot[i].path.begin()); // 移除已经使用的节点
+    }
+    else
+    {
+        Node nextStep = robot[i].path.front();
+        robot[i].path.erase(robot[i].path.begin()); // 移除已经使用的节点
         printf("move %d %d\n", i, getDirection(robot[i], nextStep));
     }
 }

@@ -1,26 +1,30 @@
+#pragma once
 #ifndef ASTAR_H
 #define ASTAR_H
+/*
+A*算法对象类
+*/
 #include <bits/stdc++.h>
-#include "robot.h"
-#include "Logger.h"
-using namespace std;
+#include "main.h"
 
-
-
-
-struct NodeHash
-{
-    size_t operator()(const Node &node) const
-    {
-        return hash<int>()(node.x) ^ hash<int>()(node.y);
-    }
+struct NodeHash {
+    size_t operator()(const Node &node) const;
 };
 
-bool isValid(int x, int y, const char map[N][N]);
-vector<Node> aStar(const vector<vector<char>>& map, Node start, Node goal);
-vector<Node> getNeighbors(const Node &node, const char map[N][N]);
-int heuristic(const Node &a, const Node &b);
+struct NodeEqual {
+    bool operator()(const Node &a, const Node &b) const;
+};
+
+class AStar {
+public:
+    static vector<Node> FindPath(const char map[][N], Node start, Node goal);
+private:
+    static int heuristic(const Node &a, const Node &b);
+    static bool isValid(int x, int y, const char map[N][N]);
+    static vector<Node> getNeighbors(const Node &node, const char map[N][N]);
+};
+
+int getDirection(Robot &robot,  Node nextStep);
 vector<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N]);
-int getDirection(Robot &robot, Node nextStep);
 
 #endif

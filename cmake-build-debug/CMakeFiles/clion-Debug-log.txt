@@ -1,4 +1,4 @@
-/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" -S /tmp/C++ -B /tmp/C++/cmake-build-debug
+/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" -S /tmp/tmp.VFi2ZzYgf3 -B /tmp/tmp.VFi2ZzYgf3/cmake-build-debug
 CMake Deprecation Warning:
   Support for "Extra Generators" like
 
@@ -26,6 +26,6 @@ This warning is for project developers.  Use -Wno-dev to suppress it.
 -- Check for working CXX compiler: /usr/bin/c++ - skipped
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
--- Configuring done (0.6s)
+-- Configuring done (0.9s)
 -- Generating done (0.0s)
--- Build files have been written to: /tmp/C++/cmake-build-debug
+-- Build files have been written to: /tmp/tmp.VFi2ZzYgf3/cmake-build-debug

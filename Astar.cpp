@@ -1,91 +1,36 @@
-#include "Astar.h"
 #include "Logger.h"
+#include "Astar.h"
+#include "robot.h"
 
-vector<Node> aStar(const char map[N][N], Node start, Node goal)
+Node::Node(int x, int y, Node *parent) : x(x), y(y), g(std::numeric_limits<int>::max()), h(0), parent(parent) {}
+
+int Node::getF() const
 {
-    priority_queue<Node, vector<Node>, greater<Node>> openSet; // 优先队列，根据 f 值排序
-    unordered_set<Node, NodeHash> openSetTracker;              // 用于跟踪 openSet 中的节点
-    unordered_set<Node, NodeHash> closedSet;                    // 用于跟踪已经评估过的节点
-    unordered_map<Node, Node, NodeHash> cameFrom;              // 用于重建路径
+    return g + h;
+}
 
-    start.g = 0;
-    start.h = heuristic(start, goal);
+bool Node::operator>(const Node &other) const
+{
+    return getF() > other.getF();
+}
 
-    LOGE("this is the astar start : %***********************");
-    openSet.push(start);
-    openSetTracker.insert(start); // 在跟踪器中添加起点
+size_t NodeHash::operator()(const Node &node) const
+{
+    return std::hash<int>()(node.x) ^ std::hash<int>()(node.y);
+}
 
-    while (!openSet.empty())
-    {
-        Node current = openSet.top();
-        openSet.pop();
-        openSetTracker.erase(current); // 从跟踪器中移除当前节点
-        // LOGI("\n\n");
-        // LOGI("Current node: (%d, %d), g: %d, h: %d", current.x, current.y, current.g, current.h);
-        // LOGI("Goal node: (%d, %d)", goal.x, goal.y);
+bool NodeEqual::operator()(const Node &a, const Node &b) const
+{
+    return a.x == b.x && a.y == b.y;
+}
 
-        // 如果到达目标节点，回溯并返回路径
-        if (current.x == goal.x && current.y == goal.y)
-        {
-            vector<Node> path;
-            while (cameFrom.find(current) != cameFrom.end())
-            {
-                path.push_back(current);
-                // LOGI("Path node: (%d, %d)", current.x, current.y);
-                current = cameFrom[current];
-            }
-            reverse(path.begin(), path.end());
-            // LOGI("\n\n");
-            // LOGI("****************Goal reached, path reconstructed.***********");
-            // LOGI("\n\n");
-
-            return path;
-        }
-        closedSet.insert(current);  // 将当前节点添加到已评估集合中
-
-        for (Node neighbor : getNeighbors(current, map))
-        {
-            if (closedSet.find(neighbor) != closedSet.end()) {
-                continue;  // 如果邻居在 closedSet 中，跳过此邻居
-            }
-
-            // 计算经过当前节点到达邻居节点的 g 值
-            int tentative_gScore = current.g + 1;
-            // LOGI("Neighbor node: (%d, %d), g: %d, h: %d, tentative_gScore: %d", neighbor.x, neighbor.y, neighbor.g, neighbor.h, tentative_gScore);
-            // LOGI("openSet size is %d", openSet.size());
-            if (tentative_gScore < neighbor.g)
-            {
-                // 如果邻居在 openSet 中，更新
-                if (openSetTracker.find(neighbor) != openSetTracker.end())
-                {
-                    // 这条路径到邻居节点更短
-                    cameFrom[neighbor] = current;
-                    // LOGI("Updating cameFrom for node: (%d, %d)", neighbor.x, neighbor.y);
-                    neighbor.g = tentative_gScore;
-                    neighbor.h = heuristic(neighbor, goal);
-                }
-
-                // 如果邻居不在 openSet 中，添加它
-                else if (openSetTracker.find(neighbor) == openSetTracker.end())
-                {
-                    openSet.push(neighbor);
-                    openSetTracker.insert(neighbor); // 在跟踪器中添加邻居节点
-                    // LOGI("Adding node to openSet and openSetTracker: (%d, %d)", neighbor.x, neighbor.y);
-                }
-            }
-        }
-        // LOGE("the loop count is %d",count);
-        // LOGI("\n\n");
-    }
-    // LOGI("\n\n");
-    // LOGI("find path failed***************");
-    // LOGI("\n\n");
-
-    return {}; // 如果无法到达目标节点，返回空路径
+int AStar::heuristic(const Node &a, const Node &b)
+{
+    return std::abs(a.x - b.x) + std::abs(a.y - b.y);
 }
 
 // 添加 isValid 函数
-bool isValid(int x, int y, const char map[N][N])
+bool AStar::isValid(int x, int y, const char map[N][N])
 {
     // 此处应包含 isValid 函数的实现
     // 检查坐标是否超出地图边界
@@ -99,50 +44,89 @@ bool isValid(int x, int y, const char map[N][N])
     return cell == '.' || cell == 'B' || cell == 'A'; // 初始位置，空地和泊位是可通行的
 }
 
-vector<Node> getNeighbors(const Node &node, const char map[N][N])
+vector<Node> AStar::getNeighbors(const Node &node, const char map[N][N])
 {
     vector<Node> neighbors;
+    // 定义四个方向：下、上、右、左
+    vector<std::pair<int, int>> directions{{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-    // 向上
-    if (isValid(node.x - 1, node.y, map))
+    for (const auto &dir : directions)
     {
-        // LOGI(" UP   *******************************************");
-        neighbors.emplace_back(node.x - 1, node.y);
-    }
-    // 向下
-    if (isValid(node.x + 1, node.y, map))
-    {
-        // LOGI(" DOWN   *******************************************");
-        neighbors.emplace_back(node.x + 1, node.y);
-    }
-    // 向左
-    if (isValid(node.x, node.y - 1, map))
-    {
-        // LOGI(" LEFT   *******************************************");
-        neighbors.emplace_back(node.x, node.y - 1);
-    }
-    // 向右
-    if (isValid(node.x, node.y + 1, map))
-    {
-        // LOGI(" RIGNT   *******************************************");
-        neighbors.emplace_back(node.x, node.y + 1);
+        int newX = node.x + dir.first;
+        int newY = node.y + dir.second;
+
+        if (isValid(newX, newY, map))
+        {
+            neighbors.emplace_back(newX, newY);
+        }
     }
 
     return neighbors;
 }
 
-// 添加 heuristic 函数
-int heuristic(const Node &a, const Node &b)
+vector<Node> AStar::FindPath(const char map[][N], Node start, Node goal)
 {
-    // 此处应包含 heuristic 函数的实现
-    return abs(a.x - b.x) + abs(a.y - b.y);
-}
+    priority_queue<Node, vector<Node>, greater<Node>> openSet;
+    unordered_map<Node, Node *, NodeHash, NodeEqual> allNodes;
 
-vector<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N])
-{
-    Node start(robot.x, robot.y);
-    vector<Node> path = aStar(map, start, goal);
-    return path;
+    start.g = 0;
+    start.h = heuristic(start, goal);
+    openSet.push(start);
+    allNodes[start] = new Node(start.x, start.y); // 存储节点指针以便于更新和回溯
+
+    while (!openSet.empty())
+    {
+        Node current = openSet.top();
+        openSet.pop();
+
+        if (current.x == goal.x && current.y == goal.y)
+        {
+            vector<Node> path;
+            Node *pathNode = allNodes[current];
+
+            while (pathNode != nullptr)
+            {
+                path.push_back(*pathNode);
+                pathNode = pathNode->parent;
+            }
+
+            reverse(path.begin(), path.end());
+
+            // 清理动态分配的节点
+            for (auto &node : allNodes)
+            {
+                delete node.second;
+            }
+
+            return path;
+        }
+
+        for (auto &neighbor : getNeighbors(current, map))
+        {
+            int tentative_g = current.g + 1;
+
+            if (!allNodes.count(neighbor) || tentative_g < allNodes[neighbor]->g)
+            {
+                neighbor.g = tentative_g;
+                neighbor.h = heuristic(neighbor, goal);
+                neighbor.parent = allNodes[current];
+
+                if (!allNodes.count(neighbor))
+                {
+                    openSet.push(neighbor);
+                    allNodes[neighbor] = new Node(neighbor.x, neighbor.y, allNodes[current]);
+                }
+            }
+        }
+    }
+
+    // 清理动态分配的节点
+    for (auto &node : allNodes)
+    {
+        delete node.second;
+    }
+
+    return {}; // 路径未找到
 }
 
 int getDirection(Robot &robot, Node nextStep)
@@ -166,8 +150,23 @@ int getDirection(Robot &robot, Node nextStep)
     }
     else
     {
-        Direction = 1;
+        Direction = 0;
     }
 
     return Direction;
+}
+
+vector<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N])
+{
+
+    Node start(robot.x, robot.y);
+    vector<Node> path = AStar::FindPath(ch, start, goal);
+    // LOGE("the start is %d %d", start.x, start.y);
+    // LOGE("the goal is %d %d", goal.x, goal.y);
+    // for (const auto point : path)
+    // {
+    //     LOGE("Path node: (%d, %d),fuhao:%c", point.x, point.y, ch[point.x][point.y]);
+    // }
+
+    return path;
 }
