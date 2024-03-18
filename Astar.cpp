@@ -64,7 +64,7 @@ vector<Node> AStar::getNeighbors(const Node &node, const char map[N][N])
     return neighbors;
 }
 
-vector<Node> AStar::FindPath(const char map[][N], Node start, Node goal)
+list<Node> AStar::FindPath(const char map[][N], Node start, Node goal)
 {
     priority_queue<Node, vector<Node>, greater<Node>> openSet;
     unordered_map<Node, Node *, NodeHash, NodeEqual> allNodes;
@@ -81,7 +81,7 @@ vector<Node> AStar::FindPath(const char map[][N], Node start, Node goal)
 
         if (current.x == goal.x && current.y == goal.y)
         {
-            vector<Node> path;
+            list<Node> path;
             Node *pathNode = allNodes[current];
 
             while (pathNode != nullptr)
@@ -156,11 +156,11 @@ int getDirection(Robot &robot, Node nextStep)
     return Direction;
 }
 
-vector<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N])
+list<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N])
 {
 
     Node start(robot.x, robot.y);
-    vector<Node> path = AStar::FindPath(ch, start, goal);
+    list<Node> path = AStar::FindPath(ch, start, goal);
     // LOGE("the start is %d %d", start.x, start.y);
     // LOGE("the goal is %d %d", goal.x, goal.y);
     // for (const auto point : path)

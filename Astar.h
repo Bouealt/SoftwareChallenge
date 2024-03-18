@@ -17,7 +17,7 @@ struct NodeEqual {
 
 class AStar {
 public:
-    static vector<Node> FindPath(const char map[][N], Node start, Node goal);
+    static list<Node> FindPath(const char map[][N], Node start, Node goal);
 private:
     static int heuristic(const Node &a, const Node &b);
     static bool isValid(int x, int y, const char map[N][N]);
@@ -25,6 +25,6 @@ private:
 };
 
 int getDirection(Robot &robot,  Node nextStep);
-vector<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N]);
+list<Node> findPathForRobot(Robot &robot, Node goal, const char map[N][N]);
 
 #endif
